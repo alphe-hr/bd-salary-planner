@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Bangladesh Lifestyle & Salary Planner — estimate a practical monthly family budget." />
+  <title>BD Salary Planner 🇧🇩</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">৳</div>
+      <div>
+        <h1>BD Salary Planner</h1>
+        <p>Bangladesh Lifestyle & Family Budget Calculator</p>
+      </div>
+    </div>
+    <button id="themeBtn" class="icon-btn" aria-label="Toggle theme">🌙</button>
+  </header>
+
+  <main class="container">
+    <section class="hero">
+      <span class="eyebrow">🇧🇩 BANGLADESH FINANCE TOOL</span>
+      <h2>Plan your salary.<br><span>Live smarter.</span></h2>
+      <p>Enter your income, family details and lifestyle. The calculator creates a practical monthly budget and financial-health score.</p>
+    </section>
+
+    <form id="plannerForm" class="grid">
+      <section class="card">
+        <div class="card-title">
+          <span class="step">01</span>
+          <div><h3>Income & Location</h3><p>Tell us about your monthly finances.</p></div>
+        </div>
+
+        <label>Monthly salary / income (৳)
+          <input id="salary" type="number" min="0" step="100" placeholder="e.g. 50000" required />
+        </label>
+
+        <div class="two">
+          <label>Income type
+            <select id="incomeType">
+              <option>Job</option><option>Business</option><option>Freelance</option><option>Mixed</option><option>Other</option>
+            </select>
+          </label>
+          <label>Area
+            <select id="area">
+              <option value="dhaka">Dhaka / Major City</option>
+              <option value="city">Other City</option>
+              <option value="rural">Rural / Village</option>
+            </select>
+          </label>
+        </div>
+
+        <label>Housing
+          <select id="housing">
+            <option value="rent">Rent</option>
+            <option value="own">Own house</option>
+            <option value="family">Living with family</option>
+          </select>
+        </label>
+
+        <label>Monthly rent / housing cost (৳)
+          <input id="rent" type="number" min="0" step="100" value="0" placeholder="0 if no rent" />
+        </label>
+      </section>
+
+      <section class="card">
+        <div class="card-title">
+          <span class="step">02</span>
+          <div><h3>Family & Education</h3><p>Household size changes the recommendation.</p></div>
+        </div>
+
+        <div class="two">
+          <label>Household members
+            <input id="members" type="number" min="1" value="1" />
+          </label>
+          <label>Income earners
+            <input id="earners" type="number" min="1" value="1" />
+          </label>
+        </div>
+
+        <div class="two">
+          <label>Children
+            <input id="children" type="number" min="0" value="0" />
+          </label>
+          <label>Students
+            <input id="students" type="number" min="0" value="0" />
+          </label>
+        </div>
+
+        <label>Monthly education cost (৳)
+          <input id="education" type="number" min="0" step="100" value="0" />
+        </label>
+
+        <label>Family type
+          <select id="familyType">
+            <option value="solo">Solo</option>
+            <option value="family">Family</option>
+          </select>
+        </label>
+      </section>
+
+      <section class="card">
+        <div class="card-title">
+          <span class="step">03</span>
+          <div><h3>Lifestyle & Commitments</h3><p>Add your regular monthly costs.</p></div>
+        </div>
+
+        <label>Transport
+          <select id="transport">
+            <option value="public">Public transport</option>
+            <option value="bike">Bike</option>
+            <option value="car">Car</option>
+            <option value="mixed">Mixed</option>
+            <option value="none">Mostly walking</option>
+          </select>
+        </label>
+
+        <div class="two">
+          <label>Loan / EMI (৳)
+            <input id="loan" type="number" min="0" step="100" value="0" />
+          </label>
+          <label>Existing savings (৳)
+            <input id="savings" type="number" min="0" step="100" value="0" />
+          </label>
+        </div>
+
+        <label>Health / medicine (৳)
+          <input id="health" type="number" min="0" step="100" value="0" />
+        </label>
+
+        <label>Other fixed expenses (৳)
+          <input id="other" type="number" min="0" step="100" value="0" />
+        </label>
+
+        <label>Primary goal
+          <select id="goal">
+            <option value="emergency">Build emergency fund</option>
+            <option value="education">Education</option>
+            <option value="home">Buy/build a home</option>
+            <option value="vehicle">Bike / car</option>
+            <option value="business">Start a business</option>
+            <option value="investment">Grow investments</option>
+          </select>
+        </label>
+
+        <button class="calculate" type="submit">Calculate My Budget →</button>
+      </section>
+    </form>
+
+    <section id="results" class="results hidden">
+      <div class="result-head">
+        <div>
+          <span class="eyebrow">YOUR PLAN</span>
+          <h2>Monthly Budget</h2>
+          <p id="summary"></p>
+        </div>
+        <div id="scoreBadge" class="score-badge">--/100</div>
+      </div>
+
+      <div class="budget-grid" id="budgetGrid"></div>
+
+      <div class="analysis-grid">
+        <div class="card score-card">
+          <h3>Financial Health</h3>
+          <div class="score-ring"><span id="score">0</span><small>/100</small></div>
+          <p id="scoreText"></p>
+          <div class="progress"><span id="scoreBar"></span></div>
+        </div>
+
+        <div class="card">
+          <h3>Recommended actions</h3>
+          <ul id="actions" class="actions"></ul>
+        </div>
+      </div>
+
+      <div class="card disclaimer">
+        <strong>⚠️ Planning note</strong>
+        <p>This is an educational budgeting estimate, not financial advice. Actual costs vary by city, family size, rent, school fees, lifestyle and income stability. Adjust the figures to your real expenses.</p>
+      </div>
+
+      <button id="printBtn" class="print-btn">🖨 Print / Save as PDF</button>
+    </section>
+  </main>
+
+  <footer>BD Salary Planner · Built for Bangladesh 🇧🇩 · <span id="year"></span></footer>
+  <script src="script.js"></script>
+</body>
+</html>
