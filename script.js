@@ -1,149 +1,876 @@
-const $ = (id) => document.getElementById(id);
-const money = n => new Intl.NumberFormat("en-BD", {
-  style:"currency", currency:"BDT", maximumFractionDigits:0
-}).format(Math.max(0, Math.round(n)));
+const $ = id => document.getElementById(id);
 
-function val(id){ return Number($(id).value) || 0; }
 
-function calculateBudget(e){
-  e.preventDefault();
+function num(id){
 
-  const salary = val("salary");
-  if(salary <= 0){
-    alert("Please enter a valid monthly income.");
-    $("salary").focus();
-    return;
+  return Number($(id).value) || 0;
+
+}
+
+
+function money(value){
+
+  return "৳" + Math.round(value).toLocaleString("en-BD");
+
+}
+
+
+/* ============================
+   HOUSING
+============================ */
+
+const housingRadios =
+document.querySelectorAll(
+  'input[name="housing"]'
+);
+
+
+function updateHousing(){
+
+  const selected =
+  document.querySelector(
+    'input[name="housing"]:checked'
+  ).value;
+
+
+  const rentBox =
+  $("rentBox");
+
+  const rentInput =
+  $("rent");
+
+
+  if(selected === "rent"){
+
+    rentBox.classList.remove("hidden");
+
+    rentInput.disabled = false;
+
   }
 
-  const members = Math.max(1, val("members"));
-  const students = val("students");
-  const children = val("children");
-  const area = $("area").value;
-  const housing = $("housing").value;
-  const transport = $("transport").value;
+  else{
 
-  // Starting ratios are intentionally adjustable. They are not official rules.
-  const areaFactor = area === "dhaka" ? 1.15 : area === "city" ? 1.0 : 0.78;
-  const householdFactor = Math.min(1.55, 0.72 + members * 0.18);
+    rentBox.classList.add("hidden");
 
-  let rent = val("rent");
-  if(housing !== "rent") rent = 0;
+    rentInput.disabled = true;
 
-  let food = salary * 0.22 * householdFactor * areaFactor;
-  let education = val("education");
-  if(education === 0 && students > 0) education = salary * (0.035 + students * 0.012);
+    rentInput.value = "";
 
-  let transportRate = {public:.055,bike:.07,car:.14,mixed:.10,none:.025}[transport];
-  let transportCost = salary * transportRate;
+  }
 
-  let utilities = salary * (members > 4 ? .065 : .055);
-  let health = val("health") || salary * (members > 3 ? .045 : .03);
-  let personal = salary * (children > 0 ? .035 : .05);
-  let emergency = salary * (members > 2 ? .055 : .08);
-  let investment = salary * .04;
-  let savings = salary * .08;
-  let loan = val("loan");
-  let other = val("other");
+}
 
-  // Housing gets a 25% target, but the user's actual rent is respected.
-  let housingCost = rent || salary * .18;
-  if(housing === "own") housingCost = salary * .04;
-  if(housing === "family") housingCost = salary * .03;
 
-  const raw = {Housing:housingCost, Food:food, Education:education, Transport:transportCost,
-    Utilities:utilities, Health:health, Personal:personal, "Emergency Fund":emergency,
-    Savings:savings, Investment:investment, "Loan / EMI":loan, Other:other};
+housingRadios.forEach(radio => {
 
-  let total = Object.values(raw).reduce((a,b)=>a+b,0);
+  radio.addEventListener(
+    "change",
+    updateHousing
+  );
 
-  // If recommendations exceed income, reduce flexible buckets first.
-  if(total > salary){
-    const excess = total - salary;
-    const flexible = ["Personal","Investment","Savings","Emergency Fund","Food"];
-    flexible.forEach(k=>{
-      const cut = Math.min(raw[k] * .65, excess);
-      raw[k] -= cut;
-      total -= cut;
+});
+
+
+updateHousing();
+
+
+
+/* ============================
+   CALCULATOR
+============================ */
+
+$("plannerForm").addEventListener(
+  "submit",
+  function(event){
+
+    event.preventDefault();
+
+
+    const salary =
+    num("salary");
+
+
+    if(salary <= 0){
+
+      alert(
+        "Please enter your monthly salary."
+      );
+
+      return;
+
+    }
+
+
+    const members =
+    Math.max(1,num("members"));
+
+
+    const earners =
+    Math.max(1,num("earners"));
+
+
+    const children =
+    num("children");
+
+
+    const students =
+    num("students");
+
+
+    const education =
+    num("education");
+
+
+    const location =
+    $("location").value;
+
+
+    const transport =
+    $("transport").value;
+
+
+    const housing =
+    document.querySelector(
+      'input[name="housing"]:checked'
+    ).value;
+
+
+    const rent =
+    housing === "rent"
+    ? num("rent")
+    : 0;
+
+
+    const health =
+    num("health");
+
+
+    const loan =
+    num("loan");
+
+
+    const other =
+    num("other");
+
+
+
+    /* ============================
+       LOCATION FACTOR
+    ============================ */
+
+    let locationFactor = 1;
+
+    if(location === "dhaka")
+      locationFactor = 1.15;
+
+    if(location === "rural")
+      locationFactor = 0.78;
+
+
+
+    /* ============================
+       HOUSING
+    ============================ */
+
+    let housingCost = 0;
+
+
+    if(housing === "rent"){
+
+      housingCost =
+      rent > 0
+      ? rent
+      : salary * .20;
+
+    }
+
+
+    if(housing === "own"){
+
+      housingCost =
+      salary * .045;
+
+    }
+
+
+    if(housing === "family"){
+
+      housingCost =
+      salary * .025;
+
+    }
+
+
+
+    /* ============================
+       FOOD
+    ============================ */
+
+    let food =
+    salary *
+    .19 *
+    (0.65 + members * .18) *
+    locationFactor;
+
+
+    food =
+    Math.min(
+      food,
+      salary * .35
+    );
+
+
+
+    /* ============================
+       UTILITIES
+    ============================ */
+
+    let utilities =
+    salary *
+    (members >= 5 ? .065 : .05);
+
+
+
+    /* ============================
+       TRANSPORT
+    ============================ */
+
+    const transportRates = {
+
+      walk:.02,
+
+      public:.055,
+
+      bike:.075,
+
+      car:.15,
+
+      mixed:.105
+
+    };
+
+
+    let transportCost =
+    salary *
+    transportRates[transport];
+
+
+
+    /* ============================
+       EDUCATION
+    ============================ */
+
+    let educationCost =
+    education;
+
+
+    if(
+      students > 0 &&
+      educationCost === 0
+    ){
+
+      educationCost =
+      salary *
+      (
+        .035 +
+        students * .012
+      );
+
+    }
+
+
+
+    /* ============================
+       HEALTH
+    ============================ */
+
+    let healthCost =
+    health;
+
+
+    if(healthCost === 0){
+
+      healthCost =
+      salary *
+      (
+        members >= 4
+        ? .04
+        : .025
+      );
+
+    }
+
+
+
+    /* ============================
+       PERSONAL
+    ============================ */
+
+    let personal =
+    salary *
+    (
+      members === 1
+      ? .07
+      : .045
+    );
+
+
+
+    /* ============================
+       BASIC EXPENSES
+    ============================ */
+
+    let basicExpenses =
+
+      housingCost +
+
+      food +
+
+      utilities +
+
+      transportCost +
+
+      educationCost +
+
+      healthCost +
+
+      personal +
+
+      loan +
+
+      other;
+
+
+
+    /* ============================
+       AUTO FINANCIAL ALLOCATION
+    ============================ */
+
+    let available =
+    salary - basicExpenses;
+
+
+    let emergency = 0;
+
+    let savings = 0;
+
+    let investment = 0;
+
+
+
+    /*
+      IMPORTANT:
+
+      User doesn't enter these.
+
+      System generates them
+      automatically.
+    */
+
+
+    if(available > 0){
+
+      emergency =
+      available * .35;
+
+      savings =
+      available * .40;
+
+      investment =
+      available * .25;
+
+    }
+
+
+
+    /* ============================
+       IF EXPENSE TOO HIGH
+    ============================ */
+
+    if(available < 0){
+
+      const deficit =
+      Math.abs(available);
+
+
+      personal =
+      Math.max(
+        0,
+        personal - deficit
+      );
+
+
+      basicExpenses =
+
+        housingCost +
+
+        food +
+
+        utilities +
+
+        transportCost +
+
+        educationCost +
+
+        healthCost +
+
+        personal +
+
+        loan +
+
+        other;
+
+
+      available =
+      salary - basicExpenses;
+
+
+      if(available > 0){
+
+        emergency =
+        available * .35;
+
+        savings =
+        available * .40;
+
+        investment =
+        available * .25;
+
+      }
+
+    }
+
+
+
+    /* ============================
+       FINAL BUDGET
+    ============================ */
+
+    const budget = {
+
+      "🏠 Housing":
+      housingCost,
+
+      "🍚 Food":
+      food,
+
+      "🎓 Education":
+      educationCost,
+
+      "🚍 Transport":
+      transportCost,
+
+      "💡 Utilities":
+      utilities,
+
+      "🏥 Health":
+      healthCost,
+
+      "👕 Personal":
+      personal,
+
+      "💳 Loan / EMI":
+      loan,
+
+      "🧾 Other":
+      other,
+
+      "🚨 Emergency Fund":
+      emergency,
+
+      "💰 Savings":
+      savings,
+
+      "📈 Investment":
+      investment
+
+    };
+
+
+
+    renderBudget(
+      budget,
+      salary
+    );
+
+
+
+    /* ============================
+       FINANCIAL SCORE
+    ============================ */
+
+    const savingRatio =
+    (
+      emergency +
+      savings +
+      investment
+    ) / salary;
+
+
+    const debtRatio =
+    loan / salary;
+
+
+    const housingRatio =
+    housingCost / salary;
+
+
+    let score = 50;
+
+
+    if(savingRatio >= .25)
+      score += 25;
+
+    else if(savingRatio >= .15)
+      score += 18;
+
+    else if(savingRatio >= .08)
+      score += 10;
+
+    else
+      score -= 5;
+
+
+    if(housingRatio <= .30)
+      score += 10;
+
+    else
+      score -= 8;
+
+
+    if(debtRatio <= .15)
+      score += 10;
+
+    else if(debtRatio <= .30)
+      score += 3;
+
+    else
+      score -= 15;
+
+
+    if(
+      basicExpenses <=
+      salary
+    )
+      score += 5;
+
+    else
+      score -= 10;
+
+
+    score =
+    Math.max(
+      0,
+      Math.min(
+        100,
+        Math.round(score)
+      )
+    );
+
+
+
+    $("score").textContent =
+    score;
+
+
+    $("scoreBig").textContent =
+    score;
+
+
+    $("scoreBar").style.width =
+    score + "%";
+
+
+
+    let scoreText;
+
+
+    if(score >= 80){
+
+      scoreText =
+      "Excellent! Your income has a strong balance between expenses and future planning.";
+
+    }
+
+    else if(score >= 65){
+
+      scoreText =
+      "Good. Your finances are reasonably balanced with some room for improvement.";
+
+    }
+
+    else if(score >= 50){
+
+      scoreText =
+      "Fair. Focus on reducing unnecessary expenses and increasing savings.";
+
+    }
+
+    else{
+
+      scoreText =
+      "Needs attention. Your essential expenses are putting pressure on your income.";
+
+    }
+
+
+    $("scoreText").textContent =
+    scoreText;
+
+
+
+    /* ============================
+       SUMMARY
+    ============================ */
+
+    let familyText;
+
+
+    if(members === 1){
+
+      familyText =
+      "Solo";
+
+    }
+
+    else{
+
+      familyText =
+      `Family of ${members}`;
+
+    }
+
+
+    $("summary").textContent =
+
+      `${money(salary)} monthly income · ` +
+
+      `${familyText} · ` +
+
+      `${students} student${students !== 1 ? "s" : ""}`;
+
+
+
+    /* ============================
+       ACTIONS
+    ============================ */
+
+    const actions = [];
+
+
+    if(emergency > 0){
+
+      actions.push(
+        `🚨 Keep ${money(emergency)} monthly for your emergency fund.`
+      );
+
+    }
+
+
+    if(savings > 0){
+
+      actions.push(
+        `💰 Save ${money(savings)} every month before discretionary spending.`
+      );
+
+    }
+
+
+    if(investment > 0){
+
+      actions.push(
+        `📈 You can allocate around ${money(investment)} toward long-term investment goals.`
+      );
+
+    }
+
+
+    if(housingRatio > .30){
+
+      actions.push(
+        "🏠 Housing is taking more than 30% of income. Consider lowering rent if possible."
+      );
+
+    }
+
+
+    if(debtRatio > .30){
+
+      actions.push(
+        "💳 Your EMI is high compared with your income. Avoid taking new unnecessary debt."
+      );
+
+    }
+
+
+    if(students > 0){
+
+      actions.push(
+        "🎓 Keep education spending protected and review school/coaching costs regularly."
+      );
+
+    }
+
+
+    if(savingRatio < .10){
+
+      actions.push(
+        "⚠️ Your automatic future allocation is low. Try to reduce flexible expenses."
+      );
+
+    }
+
+
+    $("actions").innerHTML =
+    actions
+    .map(
+      action =>
+      `<li>${action}</li>`
+    )
+    .join("");
+
+
+    $("results")
+    .classList
+    .remove("hidden");
+
+
+    $("results")
+    .scrollIntoView({
+      behavior:"smooth"
     });
+
   }
+);
 
-  let remaining = salary - total;
 
-  // Put positive remainder into savings; negative remainder is a warning.
-  if(remaining > 0) raw.Savings += remaining;
-  total = Object.values(raw).reduce((a,b)=>a+b,0);
-  remaining = salary - total;
 
-  const debtRatio = loan / salary;
-  const saveRatio = (raw.Savings + raw.Investment + raw["Emergency Fund"]) / salary;
-  const housingRatio = raw.Housing / salary;
-  let score = 55;
-  score += Math.min(20, saveRatio * 80);
-  score += housingRatio <= .30 ? 8 : -8;
-  score += debtRatio <= .15 ? 8 : debtRatio <= .30 ? 2 : -12;
-  score += students && education > salary*.20 ? -5 : 3;
-  score += remaining >= -1 ? 4 : -8;
-  score = Math.max(0, Math.min(100, Math.round(score)));
+/* ============================
+   RENDER BUDGET
+============================ */
 
-  renderBudget(raw, salary);
-  $("score").textContent = score;
-  $("scoreBadge").textContent = `${score}/100`;
-  $("scoreBar").style.width = `${score}%`;
+function renderBudget(
+  budget,
+  salary
+){
 
-  let scoreText = score >= 80 ? "Excellent — your plan has strong saving capacity."
-    : score >= 65 ? "Good — a few adjustments can make the plan stronger."
-    : score >= 50 ? "Fair — focus on controlling fixed costs and building savings."
-    : "Needs attention — reduce non-essential spending and prioritize stability.";
-  $("scoreText").textContent = scoreText;
+  $("budgetGrid").innerHTML = "";
 
-  $("summary").textContent =
-    `${money(salary)} monthly income · ${members} household member${members>1?"s":""} · ${area === "dhaka" ? "Dhaka / major city" : area === "city" ? "other city" : "rural / village"}`;
 
-  const actions = [];
-  if(saveRatio < .15) actions.push("Target at least 10–20% of income for savings/emergency goals, if your essential costs allow it.");
-  else actions.push("Your saving allocation is healthy. Keep an emergency reserve separate from daily spending.");
-  if(housingRatio > .30) actions.push("Housing is above the usual planning target of about 30% of income; consider lowering rent when practical.");
-  if(debtRatio > .30) actions.push("Loan/EMI is high relative to income. Avoid taking new debt until the ratio improves.");
-  else if(loan > 0) actions.push("Keep EMI payments on schedule and avoid using new debt for lifestyle purchases.");
-  if(students > 0) actions.push("Keep education spending protected, but compare school/coaching/transport costs annually.");
-  if(score < 65) actions.push("Build a starter emergency fund first; a longer-term target can be several months of essential expenses.");
-  if($("goal").value === "business") actions.push("For a business goal, create a separate capital fund so it does not consume emergency savings.");
-  if($("goal").value === "vehicle") actions.push("For a bike/car goal, include fuel, maintenance, registration and insurance in the total ownership cost.");
-  $("actions").innerHTML = actions.map(x=>`<li>✓ ${x}</li>`).join("");
+  Object.entries(budget)
+  .forEach(
+    ([name,amount]) => {
 
-  $("results").classList.remove("hidden");
-  $("results").scrollIntoView({behavior:"smooth", block:"start"});
+      const percentage =
+      salary > 0
+      ? Math.round(
+          amount / salary * 100
+        )
+      : 0;
+
+
+      const card =
+      document.createElement("div");
+
+
+      card.className =
+      "budget-item";
+
+
+      card.innerHTML = `
+
+        <small>${name}</small>
+
+        <h3>
+          ${money(amount)}
+        </h3>
+
+        <span>
+          ${percentage}% of income
+        </span>
+
+      `;
+
+
+      $("budgetGrid")
+      .appendChild(card);
+
+    }
+  );
+
 }
 
-function renderBudget(data, salary){
-  const labels = Object.keys(data);
-  $("budgetGrid").innerHTML = labels.map(label=>{
-    const amount = data[label];
-    const pct = salary ? Math.round(amount/salary*100) : 0;
-    return `<div class="budget-item">
-      <div class="label">${label}</div>
-      <div class="amount">${money(amount)}</div>
-      <div class="pct">${pct}% of income</div>
-    </div>`;
-  }).join("");
+
+
+/* ============================
+   DARK MODE
+============================ */
+
+$("themeBtn")
+.addEventListener(
+  "click",
+  () => {
+
+    document.body
+    .classList
+    .toggle("dark");
+
+
+    const dark =
+    document.body
+    .classList
+    .contains("dark");
+
+
+    $("themeBtn")
+    .textContent =
+    dark ? "☀️" : "🌙";
+
+
+    localStorage
+    .setItem(
+      "bd-theme",
+      dark ? "dark" : "light"
+    );
+
+  }
+);
+
+
+
+if(
+  localStorage
+  .getItem("bd-theme")
+  === "dark"
+){
+
+  document.body
+  .classList
+  .add("dark");
+
+
+  $("themeBtn")
+  .textContent =
+  "☀️";
+
 }
 
-$("plannerForm").addEventListener("submit", calculateBudget);
 
-$("housing").addEventListener("change", ()=>{
-  $("rent").disabled = $("housing").value !== "rent";
-  if($("housing").value !== "rent") $("rent").value = 0;
-});
-$("rent").disabled = $("housing").value !== "rent";
 
-$("themeBtn").addEventListener("click", ()=>{
-  document.body.classList.toggle("dark");
-  $("themeBtn").textContent = document.body.classList.contains("dark") ? "☀️" : "🌙";
-  localStorage.setItem("bdsp-theme", document.body.classList.contains("dark") ? "dark" : "light");
-});
-if(localStorage.getItem("bdsp-theme")==="dark"){
-  document.body.classList.add("dark");
-  $("themeBtn").textContent="☀️";
-}
-$("printBtn").addEventListener("click", ()=>window.print());
-$("year").textContent = new Date().getFullYear();
+/* ============================
+   PRINT
+============================ */
+
+$("printBtn")
+.addEventListener(
+  "click",
+  () => window.print()
+);
+
+
+
+/* YEAR */
+
+$("year")
+.textContent =
+new Date().getFullYear();
